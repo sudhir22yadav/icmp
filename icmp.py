@@ -87,7 +87,7 @@ def gen_packet(mysocket, ip, seq):
     # Generating ICMP packet
     mycheck = 0
     header = struct.pack('!bbHHH', ICMP_ECHO_REQUEST, 0, mycheck, ID, seq)
-    payload = bytes('Sudhir, this the data of the ICMP packet', 'utf-8')
+    payload = bytes('this the data of the ICMP packet', 'utf-8')
     packet = header + payload
     mycheck = checksum(packet)
     mycheck = socket.htons(mycheck)
