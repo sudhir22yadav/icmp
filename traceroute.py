@@ -1,8 +1,11 @@
+#! .env/bin/python3
+
 import ipaddress
 import socket
 import struct
 import time
 import random
+import argparse
 
 # IP Global Variables
 IP_VER_IHL = 69
@@ -107,8 +110,11 @@ try:
         socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
     mysocket.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
 
-    ip_dest = input('Enter IP or Domain to trace: ')
-    ip_dest = socket.gethostbyname(ip_dest)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('ip', help= 'Provide ip address or domain to trace')
+    args = parser.parse_args()
+
+    ip_dest = socket.gethostbyname(args.ip)
     if valid_ip(ip_dest):
         traceroute(ip_dest)
     else:
