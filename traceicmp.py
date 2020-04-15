@@ -7,6 +7,7 @@ import time
 import random
 import select
 import argparse
+import os
 
 # IP Global Variables
 IP_VER_IHL = 69
@@ -16,18 +17,34 @@ IP_IDENTITY = 54321
 IP_FLAG_FRAG = 0
 IP_PROTO_UDP = 17
 
-# UDP Global Variables
-UDP_SRC_PORT = 44354
-UDP_DEST_PORT = random.randint(33434, 33534)
-UDP_LEN = 8
+# ICMP Global Variables
 PACKET_COUNT = 3
-MAX_HOPS = 3
+MAX_HOPS = 30
 SECONDS = random.uniform(0.50, 1.0)
+ICMP_ECHO_REQUEST = 8
+IP_PROTO_ICMP = 1
+ID = os.getpid() & 0xFFFF
+
+# Carry Around needed for checksum function
+def carry_around_add(a, b):
+    f = 1 << 16
+    c = a + b
+    return c if c < f else c + 1 - f
+
+# Checksum function for ICMP header checksum
+def checksum(packet):
+    if len(packet) % 2:
+        packet += b'\x00'
+    s = 0
+    for i in range(0, len(packet), 2):
+        w = (packet[i]) + ((packet[i + 1]) << 8)
+        s = carry_around_add(s, w)
+    return ~s & 0xffff
 
 
 def receive(ip_dest):
     sck = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
-    ready = select.select([sck], [], [], 3)
+    ready = select.select([sck], [], [], 5)
     if ready[0] == []:
         return '0', False
     else:
@@ -47,20 +64,22 @@ def gen_header(ip_dest, ip_ttl):
     ip_src = socket.inet_aton(ip_src)
     ip_dest = socket.inet_aton(ip_dest)
     ip_header = struct.pack('!BBHHHBBH', IP_VER_IHL, IP_TOS, IP_TOTAL_LEN,
-                            IP_IDENTITY, IP_FLAG_FRAG, ip_ttl, IP_PROTO_UDP, ip_check)
+                            IP_IDENTITY, IP_FLAG_FRAG, ip_ttl, IP_PROTO_ICMP, ip_check)
     ip_header += ip_src + ip_dest
-    
-    # UDP Header
-    udp_check = 0
-    udp_header = struct.pack('!HHHH', UDP_SRC_PORT,
-                             UDP_DEST_PORT, UDP_LEN, udp_check)
-    udp_payload = bytes('this is udp payload', 'utf-8')
-    udp_header += udp_payload
 
+    # Generating ICMP packet
+    mycheck = 0
+    header = struct.pack('!bbHHH', ICMP_ECHO_REQUEST, 0, mycheck, ID, ip_ttl)
+    payload = bytes('this the data of the ICMP packet', 'utf-8')
+    packet = header + payload
+    mycheck = checksum(packet)
+    mycheck = socket.htons(mycheck)
+    # ICMP header with checksum
+    header = struct.pack('!bbHHH', ICMP_ECHO_REQUEST, 0, mycheck, ID, ip_ttl)
+    packet = header + payload
     # Combined Header
-    header = ip_header + udp_header
-    return header
-
+    full_packet = ip_header + packet
+    return full_packet
 
 def traceroute(ip_dest):
     ip_ttl = 1
@@ -78,14 +97,14 @@ def traceroute(ip_dest):
                     str(round((recv_time - start_time)*1000)) + ' ms')
             elif check is False:
                 delays.append('*')
-            
-            #time.sleep(SECONDS)
-        
-        if check: 
+
+            time.sleep(SECONDS)
+
+        if check:
             if ip_dest == hop_ip:
                 print(ip_ttl, '.', hop_ip, delays[0], delays[1], delays[2])
-                print('Traceroute finished after', ip_ttl, ' Hops')
                 mysocket.close()
+                
             elif ip_ttl >= MAX_HOPS:
                 print(ip_ttl, '.', hop_ip, delays[0], delays[1], delays[2])
                 mysocket.close()
@@ -119,7 +138,7 @@ try:
     mysocket.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('ip', help= 'Provide ip address or domain to trace')
+    parser.add_argument('ip', help='Provide ip address or domain to trace')
     args = parser.parse_args()
 
     ip_dest = socket.gethostbyname(args.ip)
@@ -129,5 +148,4 @@ try:
         print('IP Address not Valid ')
 except Exception as e:
     print(e)
-
 
