@@ -131,6 +131,6 @@ dmypy.json
 .vscode/
 tracerouteProcess
 tracerouteProcess.save
-sniff
+sniff.py
 sniffData
 test.py
