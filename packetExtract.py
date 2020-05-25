@@ -176,6 +176,8 @@ def tcp(data):
 # extracting udp data
 def udp(data):
     '''
+    UDP header and data extraction, pass data directly returned from ipv4() or ipv6 method, if you are not using any of this.
+    please pass data from 34th Byte for IPv4 and 54th Byte for IPv6(keeping in mind that IPv6 has a fixed header) 
     '''
     udp_header = data[:8]
     udp_src_port, udp_dst_port, udp_len, udp_check = unpack(
@@ -186,6 +188,8 @@ def udp(data):
 # extracting protocol under tcp or udp
 def dns(data):
     '''
+    DNS header and data extraction, data returned from udp() is passed in this. 
+    You can pass data from 42nd Byte for IPv4 and 62nd Byte for IPv6(keeping in mind that IPv6 has a fixed header)
     '''
     dns_header = data[:12]
     identifier, flags_codes, ques_count, ans_rec_count, name_srv_count, additional_rec_count = unpack(
@@ -197,6 +201,8 @@ def dns(data):
 #extracting IGMP
 def igmp(data):
     '''
+    IGMP header and data extraction, pass data directly returned from ipv4() or ipv6 method, if you
+    are not using any of this. please pass data from 34th Byte for IPv4 and 54th Byte for IPv6(keeping in mind that IPv6 has a fixed header)
     '''
     igmp_header = data[:8]
     igmp_type, igmp_res_time, igmp_check, group_addr = unpack('!BBHL',igmp_header)
