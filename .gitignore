@@ -128,9 +128,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .idea/
+
+# custom
 .vscode/
 tracerouteProcess
 tracerouteProcess.save
 sniff.py
 sniffData
 test.py
+sniffer.py.old
